@@ -137,8 +137,8 @@ FABRIC_ORDERER_URL=grpc://orderer0.hlf-orderer.svc.cluster.local:7050
 FABRIC_CHANNEL_NAME=treechannelv2
 FABRIC_CHAINCODE_NAME=treetracker
 FABRIC_MSP_ID=GreenstandMSP
-FABRIC_ADMIN_USER=admin
-FABRIC_ADMIN_PASSWORD=adminpw
+FABRIC_ADMIN_USER=*********
+FABRIC_ADMIN_PASSWORD=************
 
 # File Upload Configuration
 UPLOAD_DIR=./uploads
@@ -217,10 +217,10 @@ Build and push to DigitalOcean Container Registry:
 
 ```bash
 # Build for production
-docker build -t registry.digitalocean.com/treetracker-registry/treetracker-capture-service:latest .
+docker build -t treetracker-capture-service:latest .
 
 # Push to registry
-docker push registry.digitalocean.com/treetracker-registry/treetracker-capture-service:latest
+docker push treetracker-capture-service:latest
 ```
 
 ## Data Models
