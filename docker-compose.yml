@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  capture-service:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - KEYCLOAK_SERVER_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=treetracker
+      - KEYCLOAK_CLIENT_ID=treetracker-capture-service
+      - FABRIC_CA_URL=http://greenstand-ca-service.hlf-ca.svc.cluster.local:7058
+      - FABRIC_PEER_URL=grpc://peer0-greenstand.hlf-peer-org.svc.cluster.local:7051
+      - FABRIC_ORDERER_URL=grpc://orderer0.hlf-orderer.svc.cluster.local:7050
+      - FABRIC_CHANNEL_NAME=treechannelv2
+      - FABRIC_CHAINCODE_NAME=treetracker
+      - FABRIC_MSP_ID=GreenstandMSP
+      - FABRIC_ADMIN_USER=admin
+      - FABRIC_ADMIN_PASSWORD=adminpw
+      - UPLOAD_DIR=./uploads
+      - MAX_FILE_SIZE=10485760
+      - ALLOWED_FILE_TYPES=image/jpeg,image/png,image/webp
+      - LOG_LEVEL=debug
+    volumes:
+      - ./src:/app/src
+      - ./uploads:/app/uploads
+      - ./wallet:/app/wallet
+      - /app/node_modules
+    networks:
+      - treetracker-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=treetracker_captures
+      - POSTGRES_USER=treetracker
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - treetracker-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - treetracker-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  treetracker-network:
+    driver: bridge

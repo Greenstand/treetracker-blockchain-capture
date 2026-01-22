@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: treetracker-capture-service
+  namespace: treetracker-webapp-mvp
+  labels:
+    app: treetracker-capture-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: treetracker-capture-service
+  template:
+    metadata:
+      labels:
+        app: treetracker-capture-service
+    spec:
+      containers:
+      - name: treetracker-capture-service
+        image: registry.digitalocean.com/treetracker-registry/treetracker-web:capture-service
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3002
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3002"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:password@postgres:5432/treetracker"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: IPFS_API_URL
+          value: "http://ipfs:5001"
+        - name: BLOCKCHAIN_API_URL
+          value: "http://blockchain-auth:3000"
+        - name: AUTH_SERVICE_URL
+          value: "http://treetracker-auth-service:3001"
+        - name: KEYCLOAK_SERVER_URL
+          value: "http://keycloak-service.keycloak.svc.cluster.local:8080/keycloak"
+        - name: KEYCLOAK_REALM
+          value: "treetracker"
+        - name: KEYCLOAK_CLIENT_ID
+          value: "treetracker-capture-service"
+        - name: SESSION_SECRET
+          value: "treetracker-capture-secret-key"
+        # Hyperledger Fabric Configuration
+        - name: FABRIC_CA_URL
+          value: "http://greenstand-ca-service.hlf-ca.svc.cluster.local:7058"
+        - name: FABRIC_PEER_URL
+          value: "grpc://peer0-greenstand.hlf-peer-org.svc.cluster.local:7051"
+        - name: FABRIC_ORDERER_URL
+          value: "grpc://orderer0.hlf-orderer.svc.cluster.local:7050"
+        - name: FABRIC_CHANNEL_NAME
+          value: "treechannelv2"
+        - name: FABRIC_CHAINCODE_NAME
+          value: "treetracker"
+        - name: FABRIC_MSP_ID
+          value: "GreenstandMSP"
+        - name: FABRIC_ADMIN_USER
+          value: "admin"
+        - name: FABRIC_ADMIN_PASSWORD
+          value: "adminpw"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: treetracker-capture-service
+  namespace: treetracker-webapp-mvp
+  labels:
+    app: treetracker-capture-service
+spec:
+  type: NodePort
+  ports:
+  - port: 3002
+    targetPort: 3002
+    protocol: TCP
+    name: http
+    nodePort: 30002
+  selector:
+    app: treetracker-capture-service

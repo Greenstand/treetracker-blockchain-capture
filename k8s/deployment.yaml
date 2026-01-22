@@ -1,0 +1,179 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: treetracker-capture-service
+  namespace: treetracker-webapp-mvp
+  labels:
+    app: treetracker-capture-service
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: treetracker-capture-service
+  template:
+    metadata:
+      labels:
+        app: treetracker-capture-service
+        component: backend
+    spec:
+      containers:
+      - name: capture-service
+        image: registry.digitalocean.com/treetracker-registry/treetracker-capture-service:latest
+        ports:
+        - containerPort: 3002
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3002"
+        - name: KEYCLOAK_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: KEYCLOAK_SERVER_URL
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: KEYCLOAK_REALM
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: KEYCLOAK_CLIENT_ID
+        - name: FABRIC_CA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: FABRIC_CA_URL
+        - name: FABRIC_PEER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: FABRIC_PEER_URL
+        - name: FABRIC_ORDERER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: FABRIC_ORDERER_URL
+        - name: FABRIC_CHANNEL_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: FABRIC_CHANNEL_NAME
+        - name: FABRIC_CHAINCODE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: FABRIC_CHAINCODE_NAME
+        - name: FABRIC_MSP_ID
+          valueFrom:
+            configMapKeyRef:
+              name: capture-service-config
+              key: FABRIC_MSP_ID
+        - name: FABRIC_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: capture-service-secrets
+              key: FABRIC_ADMIN_USER
+        - name: FABRIC_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: capture-service-secrets
+              key: FABRIC_ADMIN_PASSWORD
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: capture-service-secrets
+              key: DATABASE_URL
+        - name: UPLOAD_DIR
+          value: "/app/uploads"
+        - name: MAX_FILE_SIZE
+          value: "10485760"
+        - name: ALLOWED_FILE_TYPES
+          value: "image/jpeg,image/png,image/webp"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: TOKEN_SERVICE_URL
+          value: "http://greenstand-token-service:3004/api"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+        - name: wallet
+          mountPath: /app/wallet
+      # imagePullSecrets not needed
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: capture-service-uploads
+      - name: wallet
+        persistentVolumeClaim:
+          claimName: capture-service-wallet
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: treetracker-capture-service
+  namespace: treetracker-webapp-mvp
+  labels:
+    app: treetracker-capture-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3002
+    targetPort: 3002
+    protocol: TCP
+    name: http
+  selector:
+    app: treetracker-capture-service
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: capture-service-uploads
+  namespace: treetracker-webapp-mvp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: do-block-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: capture-service-wallet
+  namespace: treetracker-webapp-mvp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: do-block-storage

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: capture-service-config
+  namespace: treetracker-webapp-mvp
+  labels:
+    app: treetracker-capture-service
+data:
+  KEYCLOAK_SERVER_URL: "http://treetracker-keycloak.treetracker-webapp-mvp.svc.cluster.local:8080"
+  KEYCLOAK_REALM: "treetracker"
+  KEYCLOAK_CLIENT_ID: "treetracker-capture-service"
+  FABRIC_CA_URL: "http://greenstand-ca-service.hlf-ca.svc.cluster.local:7058"
+  FABRIC_PEER_URL: "grpc://peer0-greenstand.hlf-peer-org.svc.cluster.local:7051"
+  FABRIC_ORDERER_URL: "grpc://orderer0.hlf-orderer.svc.cluster.local:7050"
+  FABRIC_CHANNEL_NAME: "treechannelv2"
+  FABRIC_CHAINCODE_NAME: "treetracker"
+  FABRIC_MSP_ID: "GreenstandMSP"
+  ALLOWED_ORIGINS: "https://treetracker-webapp.your-domain.com,http://localhost:3001"
